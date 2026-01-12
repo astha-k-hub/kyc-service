@@ -1,30 +1,16 @@
-const express = require('express');
-const cors = require('cors');
-const mongoose = require('mongoose');
-require('dotenv').config();
-
+const express = require("express");
 const app = express();
+const cors = require("cors");
 
-// Middleware
 app.use(cors());
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
+app.use(express.urlencoded({ extended: true }));
 
-// Test route
-app.get('/', (req, res) => {
-  res.send('KYC Service is running');
-});
+app.use("/uploads", express.static("uploads"));
 
-const kycRoutes = require('./routes/kycRoutes');
-app.use('/api', kycRoutes);
+// THIS LINE IS MISSING OR WRONG
+app.use("/api/kyc", require("./routes/kycRoutes"));
 
-// MongoDB connection
-mongoose.connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB error:', err));
-
-const PORT = process.env.PORT || 4000;
-
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+app.listen(process.env.PORT || 4000, () => {
+  console.log("Server running");
 });
