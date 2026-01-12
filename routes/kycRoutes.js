@@ -6,7 +6,7 @@ const Kyc = require('../models/Kyc');
 // POST /kyc → submit KYC
 router.post(
   '/kyc',
-  upload.single('document'),
+  upload.single('file'),
   async (req, res) => {
     try {
       const {
