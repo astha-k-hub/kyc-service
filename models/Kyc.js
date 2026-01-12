@@ -1,42 +1,12 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const kycSchema = new mongoose.Schema(
-  {
-    userId: {
-      type: String,
-      required: true
-    },
+const kycSchema = new mongoose.Schema({
+  userId: { type: String, required: true, unique: true },
+  fullName: String,
+  documentType: String,
+  documentNumber: String,
+  documentFile: String,
+  status: { type: String, default: "PENDING" }
+}, { timestamps: true });
 
-    fullName: {
-      type: String,
-      required: true
-    },
-
-    documentType: {
-      type: String,
-      enum: ['AADHAR', 'PAN', 'PASSPORT'],
-      required: true
-    },
-
-    documentNumber: {
-      type: String,
-      required: true
-    },
-
-    documentFile: {
-      type: String, // file path
-      required: true
-    },
-
-    status: {
-      type: String,
-      enum: ['PENDING', 'APPROVED', 'REJECTED'],
-      default: 'PENDING'
-    }
-  },
-  {
-    timestamps: true
-  }
-);
-
-module.exports = mongoose.model('Kyc', kycSchema);
+module.exports = mongoose.model("Kyc", kycSchema);
