@@ -14,31 +14,50 @@ const upload = multer({ storage });
 
 
 // Submit KYC
-router.post("/", upload.single("file"), async (req, res) => {
+router.post("/kyc", upload.single("file"), async (req, res) => {
   try {
     const { userId, fullName, documentType, documentNumber } = req.body;
 
-    const exists = await Kyc.findOne({ userId });
-    if (exists) {
-      return res.status(400).json({ message: "KYC already submitted" });
+    if (!req.file) {
+      return res.status(400).json({ message: "No document uploaded" });
     }
 
-    const kyc = new Kyc({
+    let status = "APPROVED";
+
+    // 1️⃣ Full name check
+    if (!fullName || fullName.length < 3) status = "REJECTED";
+
+    // 2️⃣ Document number validation
+    if (documentType === "AADHAR" && !/^\d{12}$/.test(documentNumber)) status = "REJECTED";
+    if (documentType === "PAN" && !/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/.test(documentNumber)) status = "REJECTED";
+
+    // 3️⃣ File type check
+    const allowed = ["image/png", "image/jpeg", "application/pdf"];
+    if (!allowed.includes(req.file.mimetype)) status = "REJECTED";
+
+    // 4️⃣ File size check (10KB min)
+    if (req.file.size < 10000) status = "REJECTED";
+
+    // 5️⃣ Prevent duplicate document numbers
+    const exists = await Kyc.findOne({ documentNumber });
+    if (exists) status = "REJECTED";
+
+    const kyc = await Kyc.create({
       userId,
       fullName,
       documentType,
       documentNumber,
       documentFile: req.file.path,
-      status: "PENDING"
+      status
     });
 
-    await kyc.save();
-    res.json({ message: "KYC submitted successfully" });
+    res.json({ message: "KYC processed", status });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Server error" });
+    res.status(500).json({ message: "Server error" });
   }
 });
+
 
 
 // Get KYC by userId
