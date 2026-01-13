@@ -44,42 +44,48 @@ router.post("/", upload.single("document"), async (req, res) => {
       return res.status(400).json({ error: "All fields required" });
     }
 
+    const documentFile = req.file.path;
+
     // Check if KYC already exists
     let existing = await Kyc.findOne({ userId });
-
     if (existing) {
       return res.json({
+        success: true,
         status: existing.status,
         message: "KYC already submitted",
       });
     }
 
-    // Create new KYC
-   const status = autoVerify({
-  documentType,
-  documentNumber,
-  documentFile
-});
+    // Auto verify
+    const status = autoVerify({
+      documentType,
+      documentNumber,
+      documentFile,
+    });
 
-const kyc = await KYC.create({
-  userId,
-  fullName,
-  documentType,
-  documentNumber,
-  documentFile,
-  status
-});
-    
-  return res.json({
-  success: true,
-  status: kyc.status,
-  message:
-    kyc.status === "APPROVED"
-      ? "KYC verified and approved"
-      : "KYC submitted and under verification",
-});
+    // Save to DB
+    const kyc = await Kyc.create({
+      userId,
+      fullName,
+      documentType,
+      documentNumber,
+      documentFile,
+      status,
+    });
 
-
+    return res.json({
+      success: true,
+      status: kyc.status,
+      message:
+        kyc.status === "APPROVED"
+          ? "KYC verified and approved"
+          : "KYC submitted and under verification",
+    });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
+  }
+});
 // ===============================
 // Get KYC status by userId
 // ===============================
