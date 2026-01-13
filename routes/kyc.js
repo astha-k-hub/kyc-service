@@ -1,7 +1,8 @@
-const express = require("express");
+import express from "express";
+import multer from "multer";
+import Kyc from "../models/Kyc.js";
+
 const router = express.Router();
-const multer = require("multer");
-const Kyc = require("../models/Kyc");
 
 // Storage for uploaded files
 const storage = multer.diskStorage({
