@@ -70,16 +70,13 @@ const kyc = await KYC.create({
   status
 });
     
-    return res.json({
-      success: true,
-      status: "PENDING",
-      message: "KYC submitted successfully",
-    });
-
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Server error" });
-  }
+  return res.json({
+  success: true,
+  status: kyc.status,
+  message:
+    kyc.status === "APPROVED"
+      ? "KYC verified and approved"
+      : "KYC submitted and under verification",
 });
 
 
