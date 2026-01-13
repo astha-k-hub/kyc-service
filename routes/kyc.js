@@ -16,7 +16,23 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
+function autoVerify({ documentType, documentNumber, documentFile }) {
 
+  // Aadhaar: 12 digits
+  if (documentType === "AADHAR") {
+    if (!/^\d{12}$/.test(documentNumber)) return "REJECTED";
+  }
+
+  // PAN: 5 letters + 4 digits + 1 letter
+  if (documentType === "PAN") {
+    if (!/^[A-Z]{5}[0-9]{4}[A-Z]$/.test(documentNumber)) return "REJECTED";
+  }
+
+  // Image must exist
+  if (!documentFile) return "REJECTED";
+
+  return "APPROVED";
+}
 // ===============================
 // Submit KYC
 // ===============================
@@ -39,15 +55,21 @@ router.post("/", upload.single("document"), async (req, res) => {
     }
 
     // Create new KYC
-    const kyc = await Kyc.create({
-      userId,
-      fullName,
-      documentType,
-      documentNumber,
-      documentFile: req.file.path,
-      status: "PENDING",
-    });
+   const status = autoVerify({
+  documentType,
+  documentNumber,
+  documentFile
+});
 
+const kyc = await KYC.create({
+  userId,
+  fullName,
+  documentType,
+  documentNumber,
+  documentFile,
+  status
+});
+    
     return res.json({
       success: true,
       status: "PENDING",
