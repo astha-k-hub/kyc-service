@@ -1,60 +1,85 @@
-import express from "express";
-import multer from "multer";
-import Kyc from "../models/Kyc.js";
-
+const express = require("express");
 const router = express.Router();
+const multer = require("multer");
+const Kyc = require("../models/Kyc");
 
-const upload = multer({ dest: "uploads/" });
+// Storage for uploaded files
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/kyc");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+
+const upload = multer({ storage });
 
 
+// ===============================
 // Submit KYC
-router.post("/", upload.single("file"), async (req, res) => {
+// ===============================
+router.post("/", upload.single("document"), async (req, res) => {
   try {
     const { userId, fullName, documentType, documentNumber } = req.body;
 
-    let existing = await Kyc.findOne({ userId });
-    if (existing) return res.status(400).json({ message: "KYC already submitted" });
+    if (!userId || !fullName || !documentType || !documentNumber || !req.file) {
+      return res.status(400).json({ error: "All fields required" });
+    }
 
+    // Check if KYC already exists
+    let existing = await Kyc.findOne({ userId });
+
+    if (existing) {
+      return res.json({
+        status: existing.status,
+        message: "KYC already submitted",
+      });
+    }
+
+    // Create new KYC
     const kyc = await Kyc.create({
       userId,
       fullName,
       documentType,
       documentNumber,
-      documentFile: req.file?.path
+      documentFile: req.file.path,
+      status: "PENDING",
     });
 
-    res.json({ message: "KYC submitted", status: kyc.status });
+    return res.json({
+      success: true,
+      status: "PENDING",
+      message: "KYC submitted successfully",
+    });
+
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(err);
+    return res.status(500).json({ error: "Server error" });
   }
 });
 
 
-// Get KYC status
+// ===============================
+// Get KYC status by userId
+// ===============================
 router.get("/:userId", async (req, res) => {
-  const kyc = await Kyc.findOne({ userId: req.params.userId });
+  try {
+    const kyc = await Kyc.findOne({ userId: req.params.userId });
 
-  if (!kyc) return res.status(404).json({ message: "KYC not submitted" });
+    if (!kyc) {
+      return res.json({ status: "NOT_SUBMITTED" });
+    }
 
-  res.json({ status: kyc.status });
-});
+    return res.json({
+      status: kyc.status,
+      fullName: kyc.fullName,
+      documentType: kyc.documentType,
+    });
 
-
-// Auto verification (called by your app)
-router.post("/:userId/auto-verify", async (req, res) => {
-  const kyc = await Kyc.findOne({ userId: req.params.userId });
-  if (!kyc) return res.status(404).json({ message: "No KYC" });
-
-  // simple rule: PAN or AADHAR > 8 chars = approved
-  if (kyc.documentNumber.length >= 8) {
-    kyc.status = "APPROVED";
-  } else {
-    kyc.status = "REJECTED";
+  } catch (err) {
+    return res.status(500).json({ error: "Server error" });
   }
-
-  await kyc.save();
-
-  res.json({ status: kyc.status });
 });
 
-export default router;
+module.exports = router;
