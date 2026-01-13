@@ -17,7 +17,6 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 function autoVerify({ documentType, documentNumber, documentFile }) {
-
   // Aadhaar: 12 digits
   if (documentType === "AADHAR") {
     if (!/^\d{12}$/.test(documentNumber)) return "REJECTED";
@@ -33,6 +32,7 @@ function autoVerify({ documentType, documentNumber, documentFile }) {
 
   return "APPROVED";
 }
+
 // ===============================
 // Submit KYC
 // ===============================
@@ -56,14 +56,12 @@ router.post("/", upload.single("document"), async (req, res) => {
       });
     }
 
-    // Auto verify
     const status = autoVerify({
       documentType,
       documentNumber,
       documentFile,
     });
 
-    // Save to DB
     const kyc = await Kyc.create({
       userId,
       fullName,
@@ -86,6 +84,7 @@ router.post("/", upload.single("document"), async (req, res) => {
     return res.status(500).json({ error: "Server error" });
   }
 });
+
 // ===============================
 // Get KYC status by userId
 // ===============================
@@ -102,7 +101,6 @@ router.get("/:userId", async (req, res) => {
       fullName: kyc.fullName,
       documentType: kyc.documentType,
     });
-
   } catch (err) {
     return res.status(500).json({ error: "Server error" });
   }
